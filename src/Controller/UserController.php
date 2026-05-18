@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,12 +14,46 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class UserController extends AbstractController
 {
-    #[Route('/user', name: 'app_user',methods: ['POST'])]
-    public function index(Request $request, UserPasswordHasherInterface $passwordHasher,EntityManagerInterface $em): Response
+    #[Route('/user', name: 'app_user', methods: ['POST'])]
+    #[OA\Post(
+        path: '/user',
+        summary: 'Créer un utilisateur',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'password'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', example: 'user@example.com'),
+                    new OA\Property(property: 'password', type: 'string', example: 'motdepasse123'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur créé avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'User created successfully'),
+                        new OA\Property(
+                            property: 'user',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer', example: 1),
+                                new OA\Property(property: 'email', type: 'string', example: 'user@example.com'),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
+    #[OA\Tag(name: 'Authentification')]
+    public function index(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $em): Response
     {
         $data = json_decode($request->getContent(), true);
         $user = new User();
-    
+
         $user->setEmail($data['email']);
         $password = $passwordHasher->hashPassword($user, $data['password']);
         $user->setPassword($password);
@@ -33,9 +68,37 @@ final class UserController extends AbstractController
                 'password' => $user->getPassword(),
             ],
         ]);
-        
     }
+
     #[Route('/login', name: 'app_login', methods: ['POST'])]
+    #[OA\Post(
+        path: '/login',
+        summary: 'Connexion et récupération du token JWT',
+        security: [],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'password'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', example: 'user@example.com'),
+                    new OA\Property(property: 'password', type: 'string', example: 'motdepasse123'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Token JWT retourné',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'token', type: 'string', example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Identifiants invalides'),
+        ]
+    )]
+    #[OA\Tag(name: 'Authentification')]
     public function login(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $em, JWTTokenManagerInterface $jwtManager): Response
     {
         $data = json_decode($request->getContent(), true);

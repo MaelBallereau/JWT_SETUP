@@ -1,6 +1,48 @@
-# Installation OpenSSL & Génération des clés JWT
+# Installation LexikJWT & Génération des clés JWT
 
-## 1. Ajouter OpenSSL au PATH (Windows)
+## 1. Installer LexikJWTAuthenticationBundle
+
+```bash
+composer require lexik/jwt-authentication-bundle
+```
+
+Le bundle s'enregistre automatiquement dans `config/bundles.php` :
+
+```php
+Lexik\Bundle\JWTAuthenticationBundle\LexikJWTAuthenticationBundle::class => ['all' => true],
+```
+
+### Configurer le firewall Symfony
+
+Dans `config/packages/security.yaml`, activer JWT sur le firewall principal et protéger les routes qui nécessitent une authentification :
+
+```yaml
+security:
+    firewalls:
+        main:
+            lazy: true
+            provider: app_user_provider
+            jwt: ~                         # active la lecture du token JWT
+
+    access_control:
+        - { path: ^/products, roles: IS_AUTHENTICATED_FULLY }
+```
+
+### Configurer le bundle
+
+Dans `config/packages/lexik_jwt_authentication.yaml` (créé automatiquement) :
+
+```yaml
+lexik_jwt_authentication:
+    secret_key: '%env(resolve:JWT_SECRET_KEY)%'
+    public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
+    pass_phrase: '%env(JWT_PASSPHRASE)%'
+    token_ttl: 3600   # durée de vie du token en secondes (1 heure)
+```
+
+---
+
+## 2. Ajouter OpenSSL au PATH (Windows)
 
 OpenSSL est fourni avec Git for Windows. Il faut l'ajouter aux variables d'environnement.
 
@@ -37,7 +79,7 @@ Résultat attendu : `OpenSSL 3.x.x ...`
 
 ---
 
-## 2. Générer les clés JWT
+## 3. Générer les clés JWT
 
 ### Méthode 1 — Script PHP (recommandé)
 
@@ -66,7 +108,7 @@ openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout
 
 ---
 
-## 3. Configuration `.env`
+## 4. Configuration `.env`
 
 Les variables suivantes doivent être présentes dans `.env` (déjà configurées) :
 
@@ -80,7 +122,7 @@ JWT_PASSPHRASE=mael
 
 ---
 
-## 4. Vérifier que tout fonctionne
+## 5. Vérifier que tout fonctionne
 
 ```powershell
 php bin/console lexik:jwt:generate-token test@example.com

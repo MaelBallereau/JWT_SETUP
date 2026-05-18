@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -17,12 +18,65 @@ final class ProductController extends AbstractController
     ];
 
     #[Route('/products', name: 'app_products', methods: ['GET'])]
+    #[OA\Get(
+        path: '/products',
+        summary: 'Liste tous les produits',
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Liste des produits',
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'name', type: 'string', example: 'Laptop Pro 15'),
+                            new OA\Property(property: 'price', type: 'number', example: 1299.99),
+                            new OA\Property(property: 'category', type: 'string', example: 'Electronics'),
+                            new OA\Property(property: 'stock', type: 'integer', example: 42),
+                        ]
+                    )
+                )
+            ),
+        ]
+    )]
+    #[OA\Tag(name: 'Produits')]
     public function index(): Response
     {
         return $this->json($this->products);
     }
 
     #[Route('/products/{id}', name: 'app_product_show', methods: ['GET'])]
+    #[OA\Get(
+        path: '/products/{id}',
+        summary: 'Détails d\'un produit',
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'Identifiant du produit',
+                schema: new OA\Schema(type: 'integer', example: 1)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Produit trouvé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'name', type: 'string', example: 'Laptop Pro 15'),
+                        new OA\Property(property: 'price', type: 'number', example: 1299.99),
+                        new OA\Property(property: 'category', type: 'string', example: 'Electronics'),
+                        new OA\Property(property: 'stock', type: 'integer', example: 42),
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: 'Produit non trouvé'),
+        ]
+    )]
+    #[OA\Tag(name: 'Produits')]
     public function show(int $id): Response
     {
         $product = array_values(array_filter($this->products, fn($p) => $p['id'] === $id))[0] ?? null;
